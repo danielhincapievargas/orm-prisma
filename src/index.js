@@ -17,50 +17,109 @@ app.get('/api/healthcheck', ( _, res) => {
 })
 
 app.get('/api/users', async ( _, res) => {
-  const users = await prisma.user.findMany();
-  return res.status(200).json(users)
+
+  try{
+    const users = await prisma.user.findMany();
+    res.status(200).json(users)
+  } catch(error) {
+    console.log(`${error}`);
+    res.status(400).json(error.message)
+  }
+
+})
+
+app.get('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try{
+    const userById = await prisma.user.findUnique({
+      where: {
+        id
+      }
+    })
+    res.status(200).json(userById)
+  } catch(error) {
+      res.status(400).json({
+      error: error.message,
+      message: '¡Algo salió mal!'
+    })
+    console.log(error.message);
+  }
+
 })
 
 app.post('/api/users', async (req, res) => {
   const data = req.body;
+  try{
+    const userCreated = await prisma.user.create({
+      data: {
+        fullname: data.fullname,
+        address: data.address,
+        email: data.email,
+        phone: data.phone,
+        role: data.role
+      }
+    })
+    res.status(201).json(userCreated)
+  } catch(error){
+      res.status(400).json({
+      error: error.message,
+      message: '¡Algo salió mal!'
+    })
+    console.log(error.message);
+  }
 
-  const userCreated = await prisma.user.create({
-    data: {
-      fullname: data.fullname,
-      address: data.address,
-      email: data.email,
-      phone: data.phone,
-      role: data.role
-    }
-  })
-  return res.status(201).json(userCreated)
 })
 
-app.put('/api/users', async (req, res) => {
+app.put('/api/users/:id', async (req, res) => {
   const data = req.body;
+  const { id } = req.params
+  /* ¿Cómo puedo restringir la actualización de un campo?: 
+  const updateUser = req.body;
+  const { id } = req.params
 
-  const userUpdated = await prisma.user.update({
-    where: {
-      id: data.id
-    },
-    data: {
-      ...data //¿Cómo puedo restringir la actualización de un campo?
-      //por dónde es recomendable pasar el id, por el body o en url
-    }
-  })
-  return res.status(200).json(userUpdated)
+  const prevUser = await prisma.user.findUnique(id)
+
+  if(updateUser.email !== prevUser.email) {
+    throw new Error('El email no se puede actualizar')
+  } */
+
+  try {
+    const userUpdated = await prisma.user.update({
+      where: {
+        id
+      },
+      data: {
+        ...data
+      }
+    })
+    res.status(200).json(userUpdated)
+  } catch(error) {
+      res.status(400).json({
+      error: error.message,
+      message: '¡Algo salió mal!'
+    })
+    console.log(error.message);
+  }
 })
 
-app.delete('/api/users', async (req, res) => {
-  const data = req.body;
-  console.log(data);
+app.delete('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
 
-  const userDeleted = await prisma.user.delete({
-    where: {
-      email: data.email //este campo debe ser unique para borrar. Borra todo el user. si quisiera borrar solo un campo, esto se hace con update?
-    }
-  })
-  return res.status(200).json(userDeleted)
+  try {
+    const userDeleted = await prisma.user.delete({
+      where: {
+        id
+      }
+    })
+    res.status(200).json(userDeleted)
+  } catch(error){
+    res.status(400).json({
+      error: error.message,
+      message: '¡Algo salió mal!'
+    })
+    console.log(error.message);
+  }
 })
 
 app.listen(port, () => {
